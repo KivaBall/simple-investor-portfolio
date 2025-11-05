@@ -58,8 +58,3 @@ localStorage ключі:
 У репозиторії вже є workflow `.github/workflows/deploy.yml`:
 - Працює на пуш у гілку `main` або вручну.
 - Публікує репозиторій як статичний сайт на GitHub Pages.
-
-Кроки:
-1) Увімкніть Pages у Settings → Pages → Build and deployment → Source: “GitHub Actions”.
-2) Запуште зміни у `main` або запустіть workflow вручну (Actions → Deploy to GitHub Pages).
-3) Посилання на сторінку з’явиться у виводі job `deploy` та в Settings → Pages. Додайте його у верхню частину цього README замість шаблону.
