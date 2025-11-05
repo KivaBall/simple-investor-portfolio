@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Investor Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <meta name="color-scheme" content="light dark" />
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900 dark:from-slate-900 dark:to-slate-950 dark:text-slate-100">
+    <header class="sticky top-0 z-10 backdrop-blur bg-white/60 dark:bg-slate-900/60 border-b border-slate-200/60 dark:border-slate-800">
+      <div class="max-w-5xl mx-auto px-4">
+        <div class="flex items-center justify-center gap-3 py-3">
+          <button data-tab="etfs" class="tab-btn px-4 py-2 rounded-md font-medium bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm shadow-slate-900/5">ETF 🧺</button>
+          <button data-tab="purchases" class="tab-btn px-4 py-2 rounded-md font-medium hover:bg-slate-200 dark:hover:bg-slate-800">Покупки 🛒</button>
+          <button data-tab="dashboard" class="tab-btn px-4 py-2 rounded-md font-medium hover:bg-slate-200 dark:hover:bg-slate-800">Дашборд 📊</button>
+          <div class="ml-6 flex items-center gap-2">
+            <button id="btn-export" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700" title="Експорт">⬇️ Експорт</button>
+            <button id="btn-import" class="px-3 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700" title="Імпорт">⬆️ Імпорт</button>
+            <button id="btn-reset" class="px-3 py-1.5 rounded-md bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300" title="Скинути">🗑️ Скинути</button>
+            <input id="file-import" type="file" accept="application/json" class="hidden" />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-6">
+      <!-- ETF TAB -->
+      <section id="tab-etfs" class="tab-section">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm">
+          <h2 class="text-xl font-semibold mb-4 text-center">Додати ETF 🧺</h2>
+          <form id="form-add-etf" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <input id="etf-symbol" type="text" placeholder="Symbol" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/50" required />
+            <input id="etf-name" type="text" placeholder="Name" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/50" required />
+            <button class="w-full px-4 py-2 rounded-md font-medium bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800" title="Додати">➕</button>
+          </form>
+        </div>
+        
+        <!-- ETF Chart & controls -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm mt-6">
+          <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 mb-4">
+            <div>
+              <div class="text-sm text-slate-600 dark:text-slate-300 mb-1 text-center">Показати символи</div>
+              <div id="etf-chart-symbols" class="flex flex-wrap gap-2 justify-center"></div>
+            </div>
+            <div class="flex items-end gap-2">
+              <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">
+                Від
+                <input id="etf-chart-from" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+              </label>
+              <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">
+                До
+                <input id="etf-chart-to" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+              </label>
+            </div>
+          </div>
+          <canvas id="etf-chart" height="120"></canvas>
+        </div>
+
+        <div id="etf-list" class="space-y-4 mt-6"></div>
+      </section>
+
+      <!-- PURCHASES TAB -->
+      <section id="tab-purchases" class="tab-section hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm">
+          <h2 class="text-xl font-semibold mb-4 text-center">Нова покупка 🛒</h2>
+          <form id="form-add-purchase" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <select id="purchase-symbol" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/50"></select>
+            <input id="purchase-ts" type="datetime-local" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/50" required />
+            <input id="purchase-qty" type="number" step="0.0001" min="0" placeholder="Кількість" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/50" />
+            <input id="purchase-sum" type="number" step="0.01" min="0" placeholder="Сума, €" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/50" />
+            <button class="w-full px-4 py-2 rounded-md font-medium bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800" title="Додати">➕</button>
+          </form>
+          <p class="text-sm text-slate-600 dark:text-slate-300 mt-2">Ціна на дату: <span id="purchase-unit">—</span></p>
+        </div>
+
+        <div id="purchase-list" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm mt-6"></div>
+
+        <!-- Purchases chart -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm mt-6">
+          <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 mb-4">
+            <div>
+              <div class="text-sm text-slate-600 dark:text-slate-300 mb-1 text-center">Показати символи</div>
+              <div id="purchases-chart-symbols" class="flex flex-wrap gap-2 justify-center"></div>
+            </div>
+            <div class="flex items-end gap-2">
+              <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">Від
+                <input id="purchases-chart-from" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+              </label>
+              <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">До
+                <input id="purchases-chart-to" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+              </label>
+            </div>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Вкладення по днях 💶</h3>
+          <canvas id="purchases-chart" height="100"></canvas>
+        </div>
+      </section>
+
+      <!-- DASHBOARD TAB -->
+      <section id="tab-dashboard" class="tab-section hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm">
+            <div class="text-slate-500 text-sm">Вкладено (EUR)</div>
+            <div id="stat-invested" class="text-2xl font-semibold">€0.00</div>
+          </div>
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm">
+            <div class="text-slate-500 text-sm">Поточна вартість (EUR)</div>
+            <div id="stat-current" class="text-2xl font-semibold">€0.00</div>
+          </div>
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm">
+            <div class="text-slate-500 text-sm">P/L</div>
+            <div id="stat-pl" class="text-2xl font-semibold">€0.00 (0%)</div>
+          </div>
+        </div>
+        
+        <!-- Portfolio chart -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm mt-6">
+          <div class="flex items-end justify-between gap-3 mb-3">
+            <h3 class="text-lg font-semibold">Портфель за часом 🕒</h3>
+            <div class="flex items-end gap-2">
+              <label class="text-sm text-slate-600 dark:text-slate-300">Від
+                <input id="portfolio-from" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+              </label>
+              <label class="text-sm text-slate-600 dark:text-slate-300">До
+                <input id="portfolio-to" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+              </label>
+            </div>
+          </div>
+          <canvas id="portfolio-chart" height="120"></canvas>
+        </div>
+
+        <!-- Dynamic goals -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm mt-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">Мети 🎯</h3>
+            <button id="goal-add" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700" title="Додати мету">➕</button>
+          </div>
+          <div id="goals-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+      </section>
+    </main>
+
+    <template id="tpl-etf-item">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-5 shadow-sm">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div class="text-lg font-semibold"><span data-field="symbol"></span> — <span data-field="name"></span></div>
+            <div class="text-sm text-slate-500"><span data-field="pricesCount">0</span> знімків ціни</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button data-action="toggle" class="px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700" title="Розгорнути/Згорнути">⬇️</button>
+            <button data-action="delete" class="px-3 py-1.5 rounded-md bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300" title="Видалити">🗑️</button>
+          </div>
+        </div>
+        <div data-role="details" class="mt-4 hidden">
+          <h4 class="font-medium mb-2">Знімки ціни</h4>
+          <div data-role="prices" class="space-y-2"></div>
+          <form data-role="add-price" class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+            <input data-input="ts" type="datetime-local" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/50" required />
+            <input data-input="price" type="number" step="0.0001" min="0" placeholder="Ціна, €" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 outline-none focus:ring-2 focus:ring-indigo-500/50" required />
+            <button class="w-full px-4 py-2 rounded-md font-medium bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800" title="Додати ціну">➕</button>
+          </form>
+        </div>
+      </div>
+    </template>
+
+    <template id="tpl-price-table">
+      <div>
+        <div class="flex flex-wrap items-end gap-2 mb-2">
+          <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">Від
+            <input data-filter="from" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+          </label>
+          <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">До
+            <input data-filter="to" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+          </label>
+          <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">Сортування
+            <select data-filter="sort" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+              <option value="desc">Новіші спочатку</option>
+              <option value="asc">Старіші спочатку</option>
+            </select>
+          </label>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-slate-500">
+              <tr>
+                <th class="py-2">Дата</th>
+                <th class="py-2">Ціна, €</th>
+                <th class="py-2 text-right">Дії</th>
+              </tr>
+            </thead>
+            <tbody data-role="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </template>
+
+    <template id="tpl-price-tr">
+      <tr class="border-t border-slate-200 dark:border-slate-800">
+        <td class="py-2" data-field="date"></td>
+        <td class="py-2" data-field="price"></td>
+        <td class="py-2 text-right space-x-2">
+          <button data-action="edit" class="px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700" title="Редагувати">✏️</button>
+          <button data-action="remove" class="px-2 py-1 rounded-md bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300" title="Видалити">🗑️</button>
+        </td>
+      </tr>
+    </template>
+
+    <template id="tpl-purchase-list">
+      <div>
+        <div class="flex flex-wrap items-end gap-2 mb-3">
+          <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">Символ
+            <select data-filter="symbol" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950"></select>
+          </label>
+          <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">Від
+            <input data-filter="from" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+          </label>
+          <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">До
+            <input data-filter="to" type="date" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950" />
+          </label>
+          <label class="text-sm text-slate-600 dark:text-slate-300 block text-center">Сортування
+            <select data-filter="sort" class="block w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+              <option value="desc">Новіші спочатку</option>
+              <option value="asc">Старіші спочатку</option>
+            </select>
+          </label>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-slate-500">
+              <tr>
+                <th class="py-2">Дата</th>
+                <th class="py-2">Symbol</th>
+                <th class="py-2">Кількість</th>
+                <th class="py-2">Ціна на дату</th>
+                <th class="py-2">Сума, €</th>
+                <th class="py-2"></th>
+              </tr>
+            </thead>
+            <tbody data-role="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </template>
+
+    <template id="tpl-purchase-row">
+      <tr class="border-t border-slate-200 dark:border-slate-800">
+        <td class="py-2" data-field="date"></td>
+        <td class="py-2" data-field="symbol"></td>
+        <td class="py-2" data-field="qty"></td>
+        <td class="py-2" data-field="unit"></td>
+        <td class="py-2" data-field="sum"></td>
+        <td class="py-2 text-right">
+          <button data-action="remove" class="px-2 py-1 rounded-md bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300">Видалити</button>
+        </td>
+      </tr>
+    </template>
+
+    <script src="./index.js"></script>
+  </body>
+  </html>
